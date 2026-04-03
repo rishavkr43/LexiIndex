@@ -1,5 +1,5 @@
 from sentence_transformers import SentenceTransformer
-from backend.core.config import settings
+from core.config import settings
 import numpy as np
 
 

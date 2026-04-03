@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from backend.services.retriever import retrieve_and_answer
-from backend.models.schemas import QueryRequest, QueryResponse
+from services.retriever import retrieve_and_answer
+from models.schemas import QueryRequest, QueryResponse
 
 router = APIRouter()
 

@@ -1,6 +1,6 @@
-from backend.services.page_index import two_stage_retrieve
-from backend.services.llm import generate_answer, build_sources
-from backend.models.schemas import QueryResponse, RetrievalMeta
+from services.page_index import two_stage_retrieve
+from services.llm import generate_answer, build_sources
+from models.schemas import QueryResponse, RetrievalMeta
 
 
 def retrieve_and_answer(question: str, upload_ids: list[str] | None) -> QueryResponse:

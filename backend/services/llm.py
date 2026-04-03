@@ -1,6 +1,6 @@
 from groq import Groq
-from backend.core.config import settings
-from backend.models.schemas import ChunkSource
+from core.config import settings
+from models.schemas import ChunkSource
 
 _groq = Groq(api_key=settings.GROQ_API_KEY)
 

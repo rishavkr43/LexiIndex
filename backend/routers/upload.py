@@ -1,9 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from uuid import uuid4
-from backend.services.ingestion import ingest
-from backend.services.indexer import add_chunks
-from backend.services.page_index import build_page_index
-from backend.models.schemas import UploadResponse
+from services.ingestion import ingest
+from services.indexer import add_chunks
+from services.page_index import build_page_index
+from models.schemas import UploadResponse
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.core.config import settings
-from backend.routers import upload, query, documents
+from core.config import settings
+from routers import upload, query, documents
 
 app = FastAPI(
     title="LexIndex",

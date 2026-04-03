@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 from uuid import uuid4
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from backend.core.config import settings
+from core.config import settings
 
 
 def _get_splitter():

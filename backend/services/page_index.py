@@ -1,8 +1,8 @@
 from uuid import uuid4
 from groq import Groq
-from backend.core.config import settings
-from backend.services.indexer import add_page_summary, query_page_index, query_chunks
-from backend.services.embedder import embedder
+from core.config import settings
+from services.indexer import add_page_summary, query_page_index, query_chunks
+from services.embedder import embedder
 
 
 _groq = Groq(api_key=settings.GROQ_API_KEY)

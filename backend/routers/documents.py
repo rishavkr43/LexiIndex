@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from backend.services.indexer import get_all_documents
-from backend.models.schemas import DocumentInfo
+from services.indexer import get_all_documents
+from models.schemas import DocumentInfo
 
 router = APIRouter()
 

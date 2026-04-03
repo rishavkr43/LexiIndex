@@ -20,6 +20,6 @@ class Settings(BaseSettings):
     PINECONE_NAMESPACE_PAGES: str = "page-index"
 
     class Config:
-        env_file = "backend/.env"
+        env_file = ".env"
 
 settings = Settings()
