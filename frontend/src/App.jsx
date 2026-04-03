@@ -50,6 +50,12 @@ export default function App() {
     setActiveTab("answer")
   }, [])
 
+  const handleDeleteSuccess = useCallback((uploadId) => {
+    setDocuments((prev) => prev.filter((d) => d.upload_id !== uploadId))
+    setSelectedIds((prev) => prev.filter((id) => id !== uploadId))
+    setQueryResult(null)
+  }, [])
+
   const toggleDocumentSelection = useCallback((uploadId) => {
     setSelectedIds((prev) =>
       prev.includes(uploadId)
@@ -148,6 +154,7 @@ export default function App() {
               documents={documents}
               selectedIds={selectedIds}
               onUploadSuccess={handleUploadSuccess}
+              onDeleteSuccess={handleDeleteSuccess}
               onToggleDocument={toggleDocumentSelection}
               onSelectAll={selectAll}
               onClearAll={clearAll}

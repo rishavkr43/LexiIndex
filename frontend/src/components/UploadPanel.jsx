@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Upload, FileText, CheckSquare, Square, X, Loader2 } from "lucide-react"
-import { uploadDocument } from "@/lib/api"
+import { Upload, FileText, CheckSquare, Square, X, Loader2, Trash2 } from "lucide-react"
+import { uploadDocument, deleteDocument } from "@/lib/api"
 import { formatFileSize, getFileIcon, truncateText } from "@/lib/utils"
 
 const ACCEPTED = ["pdf", "txt", "csv", "xlsx", "xls"]
@@ -10,6 +10,7 @@ export default function UploadPanel({
   documents,
   selectedIds,
   onUploadSuccess,
+  onDeleteSuccess,
   onToggleDocument,
   onSelectAll,
   onClearAll,
@@ -19,6 +20,7 @@ export default function UploadPanel({
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadingName, setUploadingName] = useState("")
   const [error, setError] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const inputRef = useRef(null)
 
   const handleFile = useCallback(async (file) => {
@@ -59,6 +61,21 @@ export default function UploadPanel({
   const onDragOver = (e) => { e.preventDefault(); setIsDragging(true) }
   const onDragLeave = () => setIsDragging(false)
   const onInputChange = (e) => { if (e.target.files[0]) handleFile(e.target.files[0]) }
+  const handleDelete = useCallback(async (uploadId, documentName) => {
+    const confirmed = window.confirm(`Delete "${documentName}" from index?`)
+    if (!confirmed) return
+
+    setError(null)
+    setDeletingId(uploadId)
+    try {
+      await deleteDocument(uploadId)
+      onDeleteSuccess?.(uploadId)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setDeletingId(null)
+    }
+  }, [onDeleteSuccess])
 
   return (
     <div className="flex flex-col gap-4">
@@ -236,6 +253,22 @@ export default function UploadPanel({
                         {doc.pages}p · {doc.chunks} chunks
                       </p>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(doc.upload_id, doc.document_name)
+                      }}
+                      disabled={deletingId === doc.upload_id}
+                      className="shrink-0 p-1 rounded transition-colors text-parchment-dim hover:text-red-300 disabled:opacity-50"
+                      title="Delete document"
+                      aria-label={`Delete ${doc.document_name}`}
+                    >
+                      {deletingId === doc.upload_id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                    </button>
                   </motion.div>
                 )
               })}

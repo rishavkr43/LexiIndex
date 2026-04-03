@@ -151,3 +151,19 @@ def get_all_documents() -> list[dict]:
         {**v, "pages": len(v["pages"])}
         for v in _document_registry.values()
     ]
+
+
+def delete_document(upload_id: str) -> None:
+    index = _get_index()
+    delete_filter = {"upload_id": {"$eq": upload_id}}
+
+    index.delete(
+        filter=delete_filter,
+        namespace=settings.PINECONE_NAMESPACE_CHUNKS,
+    )
+    index.delete(
+        filter=delete_filter,
+        namespace=settings.PINECONE_NAMESPACE_PAGES,
+    )
+
+    _document_registry.pop(upload_id, None)

@@ -47,6 +47,11 @@ export const fetchDocuments = async () => {
   return data
 }
 
+export const deleteDocument = async (uploadId) => {
+  const { data } = await client.delete(`/api/documents/${uploadId}`)
+  return data
+}
+
 export const checkHealth = async () => {
   const { data } = await client.get("/health")
   return data
