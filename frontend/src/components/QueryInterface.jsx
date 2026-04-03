@@ -16,7 +16,6 @@ export default function QueryInterface({
   documentsCount,
   isQuerying,
   setIsQuerying,
-  onBackendOnline,
   onResult,
 }) {
   const [question, setQuestion] = useState("")
@@ -65,7 +64,6 @@ export default function QueryInterface({
     try {
       const ids = selectedIds.length > 0 ? selectedIds : null
       const result = await queryDocuments(trimmed, ids)
-      onBackendOnline?.()
       onResult(result)
     } catch (err) {
       setError(err.message)

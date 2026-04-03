@@ -10,7 +10,6 @@ export default function UploadPanel({
   documents,
   selectedIds,
   onUploadSuccess,
-  onBackendOnline,
   onToggleDocument,
   onSelectAll,
   onClearAll,
@@ -40,7 +39,6 @@ export default function UploadPanel({
 
     try {
       const result = await uploadDocument(file, setUploadProgress)
-      onBackendOnline?.()
       onUploadSuccess(result)
     } catch (err) {
       setError(err.message)
@@ -49,7 +47,7 @@ export default function UploadPanel({
       setUploadProgress(0)
       setUploadingName("")
     }
-  }, [onBackendOnline, onUploadSuccess])
+  }, [onUploadSuccess])
 
   const onDrop = useCallback((e) => {
     e.preventDefault()

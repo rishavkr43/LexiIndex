@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { FileText, Wifi, WifiOff, Scale } from "lucide-react"
+import { Scale } from "lucide-react"
 import CanvasBackground from "@/components/CanvasBackground"
 import UploadPanel from "@/components/UploadPanel"
 import QueryInterface from "@/components/QueryInterface"
 import AnswerCard from "@/components/AnswerCard"
 import SourcePanel from "@/components/SourcePanel"
-import { checkHealth, fetchDocuments } from "@/lib/api"
+import { fetchDocuments } from "@/lib/api"
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -18,29 +18,18 @@ const fadeUp = {
 }
 
 export default function App() {
-  const [backendOnline, setBackendOnline] = useState(null)
   const [documents, setDocuments] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [queryResult, setQueryResult] = useState(null)
   const [isQuerying, setIsQuerying] = useState(false)
   const [activeTab, setActiveTab] = useState("answer")
-  const markBackendOnline = useCallback(() => setBackendOnline(true), [])
-
-  // Health check on mount
-  useEffect(() => {
-    checkHealth()
-      .then(() => setBackendOnline(true))
-      .catch(() => setBackendOnline(false))
-  }, [])
 
   // Load existing documents on mount
   useEffect(() => {
-    if (backendOnline) {
-      fetchDocuments()
-        .then(setDocuments)
-        .catch(() => {})
-    }
-  }, [backendOnline])
+    fetchDocuments()
+      .then(setDocuments)
+      .catch(() => {})
+  }, [])
 
   const handleUploadSuccess = useCallback((uploadResponse) => {
     const newDoc = {
@@ -114,47 +103,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Backend status */}
-          <div className="flex items-center gap-2">
-            <AnimatePresence mode="wait">
-              {backendOnline === null && (
-                <motion.div
-                  key="checking"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-1.5 text-xs text-parchment-dim"
-                >
-                  <span className="animate-scale-pulse w-2 h-2 rounded-full bg-parchment-dim inline-block" />
-                  Connecting…
-                </motion.div>
-              )}
-              {backendOnline === true && (
-                <motion.div
-                  key="online"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-1.5 text-xs text-emerald-400"
-                >
-                  <Wifi size={13} />
-                  Backend online
-                </motion.div>
-              )}
-              {backendOnline === false && (
-                <motion.div
-                  key="offline"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-1.5 text-xs text-red-400"
-                >
-                  <WifiOff size={13} />
-                  Backend offline
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </motion.header>
 
         {/* ── Hero ─────────────────────────────────────── */}
@@ -183,29 +131,6 @@ export default function App() {
           </p>
         </motion.div>
 
-        {/* ── Offline Banner ────────────────────────────── */}
-        <AnimatePresence>
-          {backendOnline === false && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mb-6 px-4 py-3 rounded-lg text-sm text-red-300 font-body"
-              style={{
-                background: "rgba(239,68,68,0.08)",
-                border: "1px solid rgba(239,68,68,0.2)",
-              }}
-            >
-              ⚠️ Cannot reach the backend service. Check that the server is
-              running and{" "}
-              <code className="text-xs bg-surface-raised px-1 py-0.5 rounded">
-                VITE_BACKEND_URL
-              </code>{" "}
-              is set correctly.
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* ── Three-column layout ───────────────────────── */}
         <div
           className="flex gap-6 pb-12"
@@ -223,7 +148,6 @@ export default function App() {
               documents={documents}
               selectedIds={selectedIds}
               onUploadSuccess={handleUploadSuccess}
-              onBackendOnline={markBackendOnline}
               onToggleDocument={toggleDocumentSelection}
               onSelectAll={selectAll}
               onClearAll={clearAll}
@@ -244,7 +168,6 @@ export default function App() {
               documentsCount={documents.length}
               isQuerying={isQuerying}
               setIsQuerying={setIsQuerying}
-              onBackendOnline={markBackendOnline}
               onResult={handleQueryResult}
             />
 
