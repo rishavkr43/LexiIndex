@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from routers import upload, query, documents
-
+from services.embedder import embedder
 app = FastAPI(
     title="LexIndex",
     description="AI Knowledge Indexing System for legal document Q&A",
