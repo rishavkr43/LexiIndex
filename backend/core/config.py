@@ -4,7 +4,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     PINECONE_API_KEY: str
     PINECONE_ENVIRONMENT: str = "us-east-1"
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URLS: str = "http://localhost:5173"
 
     EMBEDDING_MODEL: str = "paraphrase-MiniLM-L3-v2"
     LLM_MODEL: str = "llama-3.1-8b-instant"
@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str = "lexindex"
     PINECONE_NAMESPACE_CHUNKS: str = "chunks"
     PINECONE_NAMESPACE_PAGES: str = "page-index"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.FRONTEND_URLS.split(",") if origin.strip()]
 
     class Config:
         env_file = ".env"
