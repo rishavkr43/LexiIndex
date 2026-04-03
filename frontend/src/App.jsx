@@ -24,6 +24,7 @@ export default function App() {
   const [queryResult, setQueryResult] = useState(null)
   const [isQuerying, setIsQuerying] = useState(false)
   const [activeTab, setActiveTab] = useState("answer")
+  const markBackendOnline = useCallback(() => setBackendOnline(true), [])
 
   // Health check on mount
   useEffect(() => {
@@ -222,6 +223,7 @@ export default function App() {
               documents={documents}
               selectedIds={selectedIds}
               onUploadSuccess={handleUploadSuccess}
+              onBackendOnline={markBackendOnline}
               onToggleDocument={toggleDocumentSelection}
               onSelectAll={selectAll}
               onClearAll={clearAll}
@@ -242,6 +244,7 @@ export default function App() {
               documentsCount={documents.length}
               isQuerying={isQuerying}
               setIsQuerying={setIsQuerying}
+              onBackendOnline={markBackendOnline}
               onResult={handleQueryResult}
             />
 
