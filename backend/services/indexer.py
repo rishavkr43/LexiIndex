@@ -5,6 +5,10 @@ from services.embedder import embedder
 _pc = None
 _index = None
 
+# In-memory document registry — resets on restart, sufficient for assessment
+_document_registry: dict[str, dict] = {}
+
+
 def _get_index():
     global _pc, _index
     if _index is None:
@@ -13,7 +17,7 @@ def _get_index():
         if index_name not in _pc.list_indexes().names():
             _pc.create_index(
                 name=index_name,
-                dimension=384,  # MiniLM 384-dim models (L3/L6)
+                dimension=384,
                 metric="cosine",
                 spec=ServerlessSpec(
                     cloud="aws",
@@ -22,7 +26,6 @@ def _get_index():
             )
         _index = _pc.Index(index_name)
     return _index
-
 
 
 def add_chunks(chunks: list[dict]) -> int:
@@ -34,7 +37,6 @@ def add_chunks(chunks: list[dict]) -> int:
     metadatas = [c["metadata"] for c in chunks]
     embeddings = embedder.embed(texts)
 
-    # Prepare vectors for Pinecone
     vectors = [
         {
             "id": ids[i],
@@ -44,18 +46,33 @@ def add_chunks(chunks: list[dict]) -> int:
         for i in range(len(ids))
     ]
 
-    # Upsert in batches of 100
     batch_size = 100
     for i in range(0, len(vectors), batch_size):
-        batch = vectors[i:i + batch_size]
-        _get_index().upsert(vectors=batch, namespace=settings.PINECONE_NAMESPACE_CHUNKS)
+        _get_index().upsert(
+            vectors=vectors[i:i + batch_size],
+            namespace=settings.PINECONE_NAMESPACE_CHUNKS
+        )
+
+    # Register document in memory
+    first_meta = metadatas[0]
+    uid = first_meta["upload_id"]
+    if uid not in _document_registry:
+        _document_registry[uid] = {
+            "upload_id": uid,
+            "document_name": first_meta["source_file"],
+            "file_type": first_meta["file_type"],
+            "pages": set(),
+            "chunks": 0,
+        }
+    for meta in metadatas:
+        _document_registry[uid]["pages"].add(meta["page"])
+        _document_registry[uid]["chunks"] += 1
 
     return len(chunks)
 
 
 def add_page_summary(summary_id: str, summary_text: str, metadata: dict):
     embedding = embedder.embed_one(summary_text)
-    
     _get_index().upsert(
         vectors=[{
             "id": summary_id,
@@ -68,7 +85,7 @@ def add_page_summary(summary_id: str, summary_text: str, metadata: dict):
 
 def query_page_index(query_embedding: list[float], upload_ids: list[str] | None, top_k: int) -> list[dict]:
     filter_dict = {"upload_id": {"$in": upload_ids}} if upload_ids else None
-    
+
     results = _get_index().query(
         vector=query_embedding,
         top_k=top_k,
@@ -76,7 +93,7 @@ def query_page_index(query_embedding: list[float], upload_ids: list[str] | None,
         namespace=settings.PINECONE_NAMESPACE_PAGES,
         filter=filter_dict
     )
-    
+
     return [
         {
             "id": match["id"],
@@ -92,7 +109,6 @@ def query_chunks(query_embedding: list[float], page_filters: list[dict], top_k: 
     if not page_filters:
         return []
 
-    # Build Pinecone filter for multiple pages
     if len(page_filters) > 1:
         filter_dict = {
             "$or": [
@@ -131,13 +147,7 @@ def query_chunks(query_embedding: list[float], page_filters: list[dict], top_k: 
 
 
 def get_all_documents() -> list[dict]:
-    # Pinecone doesn't have a direct "get all" method, so we'll use stats
-    # This is a limitation - we'll need to track documents separately
-    # For now, return empty list (you could add a metadata tracking system)
-    
-    # Alternative: Query with a dummy vector and high top_k, then aggregate
-    # But this is not ideal for large datasets
-    
-    # Better approach: Use a separate lightweight DB (like SQLite) for metadata
-    # For now, returning empty to keep it simple
-    return []
+    return [
+        {**v, "pages": len(v["pages"])}
+        for v in _document_registry.values()
+    ]
