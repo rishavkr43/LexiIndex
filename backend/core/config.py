@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     FRONTEND_URLS: str = "http://localhost:5173"
 
     EMBEDDING_MODEL: str = "paraphrase-MiniLM-L3-v2"
-    LLM_MODEL: str = "llama-3.1-8b-instant"
+    LLM_MODEL: str = "llama-3.3-70b-versatile"
     SUMMARY_MODEL: str = "llama-3.1-8b-instant"
 
     CHUNK_SIZE: int = 800
