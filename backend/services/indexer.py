@@ -13,7 +13,7 @@ def _get_index():
         if index_name not in _pc.list_indexes().names():
             _pc.create_index(
                 name=index_name,
-                dimension=384,  # all-MiniLM-L6-v2 dimension
+                dimension=384,  # MiniLM 384-dim models (L3/L6)
                 metric="cosine",
                 spec=ServerlessSpec(
                     cloud="aws",

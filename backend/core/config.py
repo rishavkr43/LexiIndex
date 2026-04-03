@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     PINECONE_ENVIRONMENT: str = "us-east-1"
     FRONTEND_URL: str = "http://localhost:5173"
 
-    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
-    LLM_MODEL: str = "llama-3.3-70b-versatile"
+    EMBEDDING_MODEL: str = "paraphrase-MiniLM-L3-v2"
+    LLM_MODEL: str = "llama-3.1-8b-instant"
     SUMMARY_MODEL: str = "llama-3.1-8b-instant"
 
     CHUNK_SIZE: int = 800
