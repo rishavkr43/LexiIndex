@@ -9,18 +9,23 @@ class Embedder:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._model = SentenceTransformer(settings.EMBEDDING_MODEL)
+            cls._instance._model = None  # don't load yet
         return cls._instance
+
+    def _get_model(self):
+        if self._model is None:
+            self._model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        return self._model
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        vectors = self._model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
+        vectors = self._get_model().encode(texts, show_progress_bar=False, normalize_embeddings=True)
         return vectors.tolist()
 
     def embed_one(self, text: str) -> list[float]:
-        vector = self._model.encode([text], normalize_embeddings=True)
+        vector = self._get_model().encode([text], normalize_embeddings=True)
         return vector[0].tolist()
 
 
-embedder = Embedder()
+embedder = Embedder()  # now safe - model loads only on first actual use
