@@ -130,9 +130,9 @@ export default function QueryInterface({
 
           <motion.button
             onClick={handleSubmit}
-            disabled={isQuerying || !question.trim()}
-            whileHover={{ scale: isQuerying ? 1 : 1.02 }}
-            whileTap={{ scale: isQuerying ? 1 : 0.97 }}
+            disabled={isQuerying || !question.trim() || selectedIds.length === 0}
+            whileHover={{ scale: isQuerying || selectedIds.length === 0 ? 1 : 1.02 }}
+            whileTap={{ scale: isQuerying || selectedIds.length === 0 ? 1 : 0.97 }}
             className="btn-gold flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
           >
             {isQuerying ? (
