@@ -562,4 +562,4 @@ MIT License - feel free to use, modify, and distribute.
 
 ---
 
-**Built with ❤️ for transparent, grounded AI.**
+**Built with zeal for transparent, grounded AI.**
