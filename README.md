@@ -500,6 +500,19 @@ Visit `http://localhost:5173` in your browser.
 
 ---
 
+## 🌐 Hosted Backend
+
+The backend is currently hosted on **AWS EC2** with **ngrok** for HTTPS access:
+
+**Backend URL**: `https://uncontinent-jerrod-nonconflictive.ngrok-free.dev`
+
+To use the hosted backend in your frontend, update `frontend/.env.local`:
+```env
+VITE_BACKEND_URL=https://uncontinent-jerrod-nonconflictive.ngrok-free.dev
+```
+
+---
+
 ## 🔑 Configuration
 
 ### Backend (`backend/.env`)
