@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import Optional
-from uuid import UUID
 
 
 class ChunkSource(BaseModel):
@@ -9,6 +8,8 @@ class ChunkSource(BaseModel):
     page: int
     chunk_index: int
     score: float
+    section_id: Optional[str] = None
+    heading: Optional[str] = None
 
 
 class RetrievalMeta(BaseModel):
@@ -34,7 +35,7 @@ class DocumentInfo(BaseModel):
 
 class QueryRequest(BaseModel):
     question: str
-    upload_ids: Optional[list[str]] = None
+    upload_ids: list[str]
 
 
 class QueryResponse(BaseModel):

@@ -1,158 +1,110 @@
-import { useState, useRef, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Upload, FileText, CheckSquare, Square, X, Loader2, Trash2 } from "lucide-react"
-import { uploadDocument, deleteDocument } from "@/lib/api"
-import { formatFileSize, getFileIcon, truncateText } from "@/lib/utils"
-
-const ACCEPTED = ["pdf", "txt", "csv", "xlsx", "xls"]
+import { Link2, FileText, CheckSquare, Square, X, Loader2, RefreshCw } from "lucide-react"
+import { connectGoogleDoc } from "@/lib/api"
+import { truncateText } from "@/lib/utils"
 
 export default function UploadPanel({
   documents,
   selectedIds,
   onUploadSuccess,
-  onDeleteSuccess,
   onToggleDocument,
   onSelectAll,
   onClearAll,
 }) {
-  const [isDragging, setIsDragging] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [uploadingName, setUploadingName] = useState("")
+  const [docUrl, setDocUrl] = useState("")
+  const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
-  const inputRef = useRef(null)
+  const [lastConnected, setLastConnected] = useState(null)
 
-  const handleFile = useCallback(async (file) => {
-    const ext = file.name.split(".").pop().toLowerCase()
-    if (!ACCEPTED.includes(ext)) {
-      setError(`Unsupported type .${ext}. Accepted: ${ACCEPTED.join(", ")}`)
+  const handleConnect = useCallback(async () => {
+    const url = docUrl.trim()
+    if (!url) {
+      setError("Please paste a Google Doc URL.")
       return
     }
-    if (file.size > 20 * 1024 * 1024) {
-      setError("File exceeds 20MB limit.")
+    if (!url.includes("docs.google.com/document")) {
+      setError("URL doesn't look like a Google Docs link.")
       return
     }
 
     setError(null)
-    setUploading(true)
-    setUploadProgress(0)
-    setUploadingName(file.name)
+    setConnecting(true)
 
     try {
-      const result = await uploadDocument(file, setUploadProgress)
-      onUploadSuccess(result)
+      const result = await connectGoogleDoc(url)
+      setLastConnected(result)
+      setDocUrl("")
+      onUploadSuccess({
+        upload_id: result.doc_id,
+        document_name: `Google Doc (${result.doc_id.slice(0, 8)}…)`,
+        pages_processed: result.sections_indexed,
+        chunks_created: result.added,
+        doc_id: result.doc_id,
+        is_gdoc: true,
+      })
     } catch (err) {
       setError(err.message)
     } finally {
-      setUploading(false)
-      setUploadProgress(0)
-      setUploadingName("")
+      setConnecting(false)
     }
-  }, [onUploadSuccess])
+  }, [docUrl, onUploadSuccess])
 
-  const onDrop = useCallback((e) => {
-    e.preventDefault()
-    setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
-  }, [handleFile])
-
-  const onDragOver = (e) => { e.preventDefault(); setIsDragging(true) }
-  const onDragLeave = () => setIsDragging(false)
-  const onInputChange = (e) => { if (e.target.files[0]) handleFile(e.target.files[0]) }
-  const handleDelete = useCallback(async (uploadId, documentName) => {
-    const confirmed = window.confirm(`Delete "${documentName}" from index?`)
-    if (!confirmed) return
-
-    setError(null)
-    setDeletingId(uploadId)
-    try {
-      await deleteDocument(uploadId)
-      onDeleteSuccess?.(uploadId)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setDeletingId(null)
-    }
-  }, [onDeleteSuccess])
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleConnect()
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Upload Zone */}
+      {/* ── Connect Google Doc ─────────────────────────────── */}
       <div className="card-lexindex p-4">
         <h3 className="font-display text-sm font-semibold text-parchment mb-3 flex items-center gap-2">
-          <Upload size={14} className="text-gold" />
-          Upload Document
+          <Link2 size={14} className="text-gold" />
+          Connect Google Doc
         </h3>
 
-        <div
-          className={`upload-zone flex flex-col items-center justify-center gap-3 cursor-pointer py-8 px-4 ${isDragging ? "drag-active" : ""}`}
-          onClick={() => !uploading && inputRef.current?.click()}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept={ACCEPTED.map(e => `.${e}`).join(",")}
-            className="hidden"
-            onChange={onInputChange}
-          />
+        <div className="flex flex-col gap-2">
+          <div
+            className="flex items-center gap-2 rounded-lg overflow-hidden transition-all duration-200"
+            style={{
+              border: `1px solid ${connecting ? "rgba(201,168,76,0.5)" : "var(--border)"}`,
+              background: "var(--surface-raised)",
+              boxShadow: connecting ? "0 0 14px rgba(201,168,76,0.07)" : "none",
+            }}
+          >
+            <Link2 size={13} className="ml-3 text-gold-dim shrink-0" />
+            <input
+              id="gdoc-url-input"
+              type="url"
+              value={docUrl}
+              onChange={(e) => { setDocUrl(e.target.value); setError(null) }}
+              onKeyDown={handleKeyDown}
+              disabled={connecting}
+              placeholder="Paste Google Doc URL…"
+              className="flex-1 bg-transparent text-sm font-body text-parchment placeholder-parchment-dim outline-none py-2.5 pr-2"
+            />
+          </div>
 
-          <AnimatePresence mode="wait">
-            {uploading ? (
-              <motion.div
-                key="uploading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-3 w-full"
-              >
-                <Loader2 size={24} className="text-gold animate-spin" />
-                <p className="text-xs text-parchment-dim text-center font-body">
-                  {truncateText(uploadingName, 32)}
-                </p>
-                <div className="w-full score-bar">
-                  <div
-                    className="score-bar-fill"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-                <p className="text-xs text-gold font-body">{uploadProgress}%</p>
-              </motion.div>
+          <motion.button
+            id="connect-gdoc-btn"
+            onClick={handleConnect}
+            disabled={connecting || !docUrl.trim()}
+            whileHover={{ scale: connecting ? 1 : 1.02 }}
+            whileTap={{ scale: connecting ? 1 : 0.97 }}
+            className="btn-gold w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-body disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {connecting ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                Indexing sections…
+              </>
             ) : (
-              <motion.div
-                key="idle"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-2"
-              >
-                <div
-                  className="flex items-center justify-center rounded-full"
-                  style={{
-                    width: 44,
-                    height: 44,
-                    background: "rgba(201,168,76,0.08)",
-                    border: "1px solid rgba(201,168,76,0.2)",
-                  }}
-                >
-                  <Upload size={18} className="text-gold" />
-                </div>
-                <p className="text-sm text-parchment font-body text-center">
-                  Drop file here or{" "}
-                  <span className="text-gold underline underline-offset-2 cursor-pointer">
-                    browse
-                  </span>
-                </p>
-                <p className="text-xs text-parchment-dim font-body">
-                  PDF, TXT, CSV, XLSX · Max 20MB
-                </p>
-              </motion.div>
+              <>
+                <Link2 size={13} />
+                Connect Document
+              </>
             )}
-          </AnimatePresence>
+          </motion.button>
         </div>
 
         <AnimatePresence>
@@ -174,14 +126,38 @@ export default function UploadPanel({
             </motion.div>
           )}
         </AnimatePresence>
+
+        <AnimatePresence>
+          {lastConnected && !error && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mt-3 text-xs font-body"
+              style={{
+                background: "rgba(201,168,76,0.07)",
+                border: "1px solid rgba(201,168,76,0.2)",
+                borderRadius: 6,
+                padding: "8px 10px",
+                color: "var(--parchment-dim)",
+              }}
+            >
+              ✓ &nbsp;
+              <span className="text-gold">
+                {lastConnected.sections_indexed} sections
+              </span>{" "}
+              indexed — live sync active
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Indexed Documents */}
+      {/* ── Connected Docs ────────────────────────────────────── */}
       <div className="card-lexindex p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-display text-sm font-semibold text-parchment flex items-center gap-2">
             <FileText size={14} className="text-gold" />
-            Indexed Documents
+            Connected Docs
             {documents.length > 0 && (
               <span
                 className="text-xs font-body px-1.5 py-0.5 rounded-full text-gold"
@@ -194,37 +170,24 @@ export default function UploadPanel({
 
           {documents.length > 0 && (
             <div className="flex gap-2">
-              <button
-                onClick={onSelectAll}
-                className="text-xs text-gold-dim hover:text-gold font-body transition-colors"
-              >
-                All
-              </button>
+              <button onClick={onSelectAll} className="text-xs text-gold-dim hover:text-gold font-body transition-colors">All</button>
               <span className="text-border text-xs">·</span>
-              <button
-                onClick={onClearAll}
-                className="text-xs text-parchment-dim hover:text-parchment font-body transition-colors"
-              >
-                None
-              </button>
+              <button onClick={onClearAll} className="text-xs text-parchment-dim hover:text-parchment font-body transition-colors">None</button>
             </div>
           )}
         </div>
 
         {documents.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-xs text-parchment-dim font-body">
-              No documents indexed yet.
-            </p>
-            <p className="text-xs text-parchment-faint font-body mt-1">
-              Upload a file to get started.
-            </p>
+            <p className="text-xs text-parchment-dim font-body">No documents connected yet.</p>
+            <p className="text-xs text-parchment-faint font-body mt-1">Paste a Google Doc URL above to get started.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2" style={{ maxHeight: 360, overflowY: "auto" }}>
             <AnimatePresence>
               {documents.map((doc, i) => {
                 const isSelected = selectedIds.includes(doc.upload_id)
+                const isGdoc = doc.is_gdoc || doc.file_type === "gdoc"
                 return (
                   <motion.div
                     key={doc.upload_id}
@@ -240,35 +203,20 @@ export default function UploadPanel({
                     }}
                   >
                     <div className="mt-0.5 shrink-0">
-                      {isSelected
-                        ? <CheckSquare size={14} className="text-gold" />
-                        : <Square size={14} className="text-parchment-dim" />
-                      }
+                      {isSelected ? <CheckSquare size={14} className="text-gold" /> : <Square size={14} className="text-parchment-dim" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-body text-parchment truncate leading-snug">
-                        {getFileIcon(doc.file_type)} {doc.document_name}
+                        {isGdoc ? "📄" : "📎"} {doc.document_name}
                       </p>
-                      <p className="text-xs text-parchment-dim font-body mt-1">
-                        {doc.pages}p · {doc.chunks} chunks
+                      <p className="text-xs text-parchment-dim font-body mt-1 flex items-center gap-1.5">
+                        {isGdoc ? (
+                          <><RefreshCw size={9} className="text-gold-dim" />{doc.pages}s · {doc.chunks} chunks · live sync</>
+                        ) : (
+                          <>{doc.pages}p · {doc.chunks} chunks</>
+                        )}
                       </p>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(doc.upload_id, doc.document_name)
-                      }}
-                      disabled={deletingId === doc.upload_id}
-                      className="shrink-0 p-1 rounded transition-colors text-parchment-dim hover:text-red-300 disabled:opacity-50"
-                      title="Delete document"
-                      aria-label={`Delete ${doc.document_name}`}
-                    >
-                      {deletingId === doc.upload_id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={14} />
-                      )}
-                    </button>
                   </motion.div>
                 )
               })}
@@ -280,7 +228,7 @@ export default function UploadPanel({
           <p className="text-xs text-parchment-dim font-body mt-3 text-center">
             {selectedIds.length === 0
               ? "No filter — querying all documents"
-              : `Querying ${selectedIds.length} of ${documents.length} document${selectedIds.length > 1 ? "s" : ""}`}
+              : `Querying ${selectedIds.length} of ${documents.length} doc${selectedIds.length > 1 ? "s" : ""}`}
           </p>
         )}
       </div>

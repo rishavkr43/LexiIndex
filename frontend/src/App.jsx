@@ -6,6 +6,7 @@ import UploadPanel from "@/components/UploadPanel"
 import QueryInterface from "@/components/QueryInterface"
 import AnswerCard from "@/components/AnswerCard"
 import SourcePanel from "@/components/SourcePanel"
+import SyncIndicator from "@/components/SyncIndicator"
 import { fetchDocuments } from "@/lib/api"
 
 const fadeUp = {
@@ -35,9 +36,11 @@ export default function App() {
     const newDoc = {
       upload_id: uploadResponse.upload_id,
       document_name: uploadResponse.document_name,
-      file_type: uploadResponse.document_name.split(".").pop().toLowerCase(),
+      file_type: uploadResponse.is_gdoc ? "gdoc" : uploadResponse.document_name.split(".").pop().toLowerCase(),
       pages: uploadResponse.pages_processed,
       chunks: uploadResponse.chunks_created,
+      is_gdoc: uploadResponse.is_gdoc ?? false,
+      doc_id: uploadResponse.doc_id ?? null,
     }
     setDocuments((prev) => {
       const exists = prev.find((d) => d.upload_id === newDoc.upload_id)
@@ -104,10 +107,12 @@ export default function App() {
                 LexIndex
               </h1>
               <p className="text-xs text-parchment-dim mt-0.5 font-body">
-                Smart Document Q&A Platform
+                Live Google Docs RAG
               </p>
             </div>
           </div>
+
+          <SyncIndicator />
 
         </motion.header>
 
@@ -120,20 +125,20 @@ export default function App() {
           className="py-10 text-center"
         >
           <p className="text-xs uppercase tracking-widest text-gold-dim font-body mb-3">
-            Intelligent Document Analysis
+            Live Google Docs RAG
           </p>
           <h2
             className="font-display text-gradient-gold mb-3"
             style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", lineHeight: 1.15 }}
           >
-            Index. Retrieve. Understand.
+            Connect. Sync. Understand.
           </h2>
           <p
             className="font-body text-parchment-dim mx-auto"
             style={{ maxWidth: 480, fontSize: "0.95rem", lineHeight: 1.7 }}
           >
-            Upload your documents and ask questions. Every answer is grounded
-            in your content — with full retrieval transparency.
+            Paste a Google Doc URL and ask questions. Your knowledge base
+            stays live — re-indexed automatically every minute.
           </p>
         </motion.div>
 

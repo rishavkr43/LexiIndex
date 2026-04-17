@@ -1,29 +1,46 @@
+"""
+llm.py — Groq LLM answer generation.
+
+Citation labels: [Heading] for Google Docs, [filename, p.N] for file uploads.
+"""
+
 from groq import Groq
 from core.config import settings
 from models.schemas import ChunkSource
 
 _groq = None
 
+
 def _get_groq():
     global _groq
     if _groq is None:
         _groq = Groq(api_key=settings.GROQ_API_KEY)
     return _groq
-_SYSTEM_PROMPT = """You are a legal document assistant for a law firm.
-You answer questions strictly based on the document context provided below.
+
+
+_SYSTEM_PROMPT = """You are a document assistant. You answer questions strictly based on the document context provided below.
 Rules you must follow:
 - Only use information present in the provided context.
-- For every factual claim, cite the source document and page number in brackets, e.g. [case_file.pdf, p.4].
+- For every factual claim, cite the source in brackets using the label shown before each passage, e.g. [Introduction] or [contract.pdf, p.4].
 - If the answer is not found in the context, respond exactly with: "The information is not available in the uploaded documents."
 - Do not speculate, infer beyond the text, or use external knowledge.
 - Be concise and precise."""
 
 
+def _chunk_label(meta: dict) -> str:
+    if meta.get("file_type") == "gdoc":
+        heading = meta.get("heading") or meta.get("section_id") or "Document"
+        return f"[{heading}]"
+    else:
+        source_file = meta.get("source_file", "document")
+        page = meta.get("page", "?")
+        return f"[{source_file}, p.{page}]"
+
+
 def _build_context_block(chunks: list[dict]) -> str:
     blocks = []
     for c in chunks:
-        meta = c["metadata"]
-        label = f"[{meta['source_file']}, p.{meta['page']}]"
+        label = _chunk_label(c["metadata"])
         blocks.append(f"{label}\n{c['text']}")
     return "\n\n---\n\n".join(blocks)
 
@@ -51,9 +68,11 @@ def build_sources(chunks: list[dict]) -> list[ChunkSource]:
     return [
         ChunkSource(
             text=c["text"],
-            source_file=c["metadata"]["source_file"],
-            page=c["metadata"]["page"],
-            chunk_index=c["metadata"]["chunk_index"],
+            source_file=c["metadata"].get("source_file", ""),
+            page=c["metadata"].get("page", 0),
+            section_id=c["metadata"].get("section_id"),
+            heading=c["metadata"].get("heading"),
+            chunk_index=c["metadata"].get("chunk_index", 0),
             score=c["score"],
         )
         for c in chunks

@@ -47,12 +47,24 @@ export const fetchDocuments = async () => {
   return data
 }
 
-export const deleteDocument = async (uploadId) => {
-  const { data } = await client.delete(`/api/documents/${uploadId}`)
+export const checkHealth = async () => {
+  const { data } = await client.get("/health")
   return data
 }
 
-export const checkHealth = async () => {
-  const { data } = await client.get("/health")
+// ── Google Docs ───────────────────────────────────────────────────────────────
+
+export const connectGoogleDoc = async (url) => {
+  const { data } = await client.post("/api/connect-gdoc", { url })
+  return data
+}
+
+export const getSyncStatus = async () => {
+  const { data } = await client.get("/api/sync-status")
+  return data
+}
+
+export const getSyncStatusForDoc = async (docId) => {
+  const { data } = await client.get(`/api/sync-status/${docId}`)
   return data
 }

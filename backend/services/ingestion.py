@@ -1,5 +1,13 @@
+"""
+ingestion.py — document parsing and chunking.
+
+Supports file uploads (PDF, TXT, CSV, XLSX) and Google Docs via chunk_gdoc_section().
+"""
+
+import hashlib
 from io import BytesIO
 from uuid import uuid4
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from core.config import settings
 
@@ -26,6 +34,45 @@ def _chunk_page(text: str, metadata: dict) -> list[dict]:
     ]
 
 
+# ── Google Docs ───────────────────────────────────────────────────────────────
+
+def chunk_gdoc_section(section: dict, doc_id: str) -> list[dict]:
+    """
+    Chunk a parsed Google Doc section. Each chunk inherits section_id
+    and content_hash from its parent section.
+    """
+    content = section["content"]
+    section_id = section["section_id"]
+    content_hash = section["hash"]
+    heading = section["heading"]
+
+    base_metadata = {
+        "doc_id": doc_id,
+        "section_id": section_id,
+        "content_hash": content_hash,
+        "heading": heading,
+        "source_file": doc_id,
+        "upload_id": doc_id,
+        "page": 0,
+        "file_type": "gdoc",
+    }
+
+    splitter = _get_splitter()
+    raw_chunks = splitter.split_text(content)
+
+    return [
+        {
+            "id": str(uuid4()),
+            "text": chunk,
+            "metadata": {**base_metadata, "chunk_index": i},
+        }
+        for i, chunk in enumerate(raw_chunks)
+        if chunk.strip()
+    ]
+
+
+# ── File parsers ──────────────────────────────────────────────────────────────
+
 def parse_pdf(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[dict], list[dict]]:
     import fitz
 
@@ -38,6 +85,7 @@ def parse_pdf(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[di
         if not text:
             continue
 
+        page_hash = hashlib.md5(text.encode()).hexdigest()
         page_texts.append({
             "page": page_num,
             "text": text,
@@ -46,6 +94,10 @@ def parse_pdf(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[di
         })
 
         chunks = _chunk_page(text, {
+            "doc_id": upload_id,
+            "section_id": f"p{page_num}",
+            "content_hash": page_hash,
+            "heading": f"Page {page_num}",
             "source_file": filename,
             "upload_id": upload_id,
             "page": page_num,
@@ -60,7 +112,7 @@ def parse_txt(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[di
     text = file_bytes.decode("utf-8", errors="ignore")
     lines = text.split("\n")
     page_size = 50
-    pages = [lines[i:i+page_size] for i in range(0, len(lines), page_size)]
+    pages = [lines[i : i + page_size] for i in range(0, len(lines), page_size)]
 
     all_chunks = []
     page_texts = []
@@ -70,6 +122,7 @@ def parse_txt(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[di
         if not page_text:
             continue
 
+        page_hash = hashlib.md5(page_text.encode()).hexdigest()
         page_texts.append({
             "page": page_num,
             "text": page_text,
@@ -78,6 +131,10 @@ def parse_txt(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[di
         })
 
         chunks = _chunk_page(page_text, {
+            "doc_id": upload_id,
+            "section_id": f"p{page_num}",
+            "content_hash": page_hash,
+            "heading": f"Page {page_num}",
             "source_file": filename,
             "upload_id": upload_id,
             "page": page_num,
@@ -97,15 +154,15 @@ def parse_csv(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[di
     page_texts = []
 
     for page_num, start in enumerate(range(0, len(df), rows_per_page), start=1):
-        chunk_df = df.iloc[start:start+rows_per_page]
+        chunk_df = df.iloc[start : start + rows_per_page]
         page_text = "\n".join(
             ", ".join(f"{col}: {val}" for col, val in row.items())
             for _, row in chunk_df.iterrows()
         )
-
         if not page_text.strip():
             continue
 
+        page_hash = hashlib.md5(page_text.encode()).hexdigest()
         page_texts.append({
             "page": page_num,
             "text": page_text,
@@ -114,6 +171,10 @@ def parse_csv(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[di
         })
 
         chunks = _chunk_page(page_text, {
+            "doc_id": upload_id,
+            "section_id": f"p{page_num}",
+            "content_hash": page_hash,
+            "heading": f"Page {page_num}",
             "source_file": filename,
             "upload_id": upload_id,
             "page": page_num,
@@ -133,15 +194,15 @@ def parse_excel(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[
     page_texts = []
 
     for page_num, start in enumerate(range(0, len(df), rows_per_page), start=1):
-        chunk_df = df.iloc[start:start+rows_per_page]
+        chunk_df = df.iloc[start : start + rows_per_page]
         page_text = "\n".join(
             ", ".join(f"{col}: {val}" for col, val in row.items())
             for _, row in chunk_df.iterrows()
         )
-
         if not page_text.strip():
             continue
 
+        page_hash = hashlib.md5(page_text.encode()).hexdigest()
         page_texts.append({
             "page": page_num,
             "text": page_text,
@@ -150,6 +211,10 @@ def parse_excel(file_bytes: bytes, filename: str, upload_id: str) -> tuple[list[
         })
 
         chunks = _chunk_page(page_text, {
+            "doc_id": upload_id,
+            "section_id": f"p{page_num}",
+            "content_hash": page_hash,
+            "heading": f"Page {page_num}",
             "source_file": filename,
             "upload_id": upload_id,
             "page": page_num,
