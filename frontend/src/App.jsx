@@ -28,7 +28,7 @@ export default function App() {
   // Load existing documents on mount
   useEffect(() => {
     fetchDocuments()
-      .then(setDocuments)
+      .then((data) => setDocuments(Array.isArray(data) ? data : []))
       .catch(() => {})
   }, [])
 

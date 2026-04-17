@@ -17,6 +17,10 @@ export default function UploadPanel({
   const [error, setError] = useState(null)
   const [lastConnected, setLastConnected] = useState(null)
 
+  // Defensive guards — ensure props are always arrays
+  const docList = Array.isArray(documents) ? documents : []
+  const selList = Array.isArray(selectedIds) ? selectedIds : []
+
   const handleConnect = useCallback(async () => {
     const url = docUrl.trim()
     if (!url) {
@@ -158,17 +162,17 @@ export default function UploadPanel({
           <h3 className="font-display text-sm font-semibold text-parchment flex items-center gap-2">
             <FileText size={14} className="text-gold" />
             Connected Docs
-            {documents.length > 0 && (
+            {docList.length > 0 && (
               <span
                 className="text-xs font-body px-1.5 py-0.5 rounded-full text-gold"
                 style={{ background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.2)" }}
               >
-                {documents.length}
+                {docList.length}
               </span>
             )}
           </h3>
 
-          {documents.length > 0 && (
+          {docList.length > 0 && (
             <div className="flex gap-2">
               <button onClick={onSelectAll} className="text-xs text-gold-dim hover:text-gold font-body transition-colors">All</button>
               <span className="text-border text-xs">·</span>
@@ -177,7 +181,7 @@ export default function UploadPanel({
           )}
         </div>
 
-        {documents.length === 0 ? (
+        {docList.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-xs text-parchment-dim font-body">No documents connected yet.</p>
             <p className="text-xs text-parchment-faint font-body mt-1">Paste a Google Doc URL above to get started.</p>
@@ -185,8 +189,8 @@ export default function UploadPanel({
         ) : (
           <div className="flex flex-col gap-2" style={{ maxHeight: 360, overflowY: "auto" }}>
             <AnimatePresence>
-              {documents.map((doc, i) => {
-                const isSelected = selectedIds.includes(doc.upload_id)
+              {docList.map((doc, i) => {
+                const isSelected = selList.includes(doc.upload_id)
                 const isGdoc = doc.is_gdoc || doc.file_type === "gdoc"
                 return (
                   <motion.div
@@ -224,11 +228,11 @@ export default function UploadPanel({
           </div>
         )}
 
-        {documents.length > 0 && (
+        {docList.length > 0 && (
           <p className="text-xs text-parchment-dim font-body mt-3 text-center">
-            {selectedIds.length === 0
+            {selList.length === 0
               ? "No filter — querying all documents"
-              : `Querying ${selectedIds.length} of ${documents.length} doc${selectedIds.length > 1 ? "s" : ""}`}
+              : `Querying ${selList.length} of ${docList.length} doc${selList.length > 1 ? "s" : ""}`}
           </p>
         )}
       </div>

@@ -63,3 +63,7 @@ htmlcov/
 
 # OS
 Thumbs.db
+
+# Google Cloud Credentials
+credentials.json
+*-credentials.json

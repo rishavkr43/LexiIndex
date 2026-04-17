@@ -88,6 +88,14 @@ def delete_section(doc_id: str, section_id: str) -> None:
     index.delete(filter=filter_dict, namespace=settings.PINECONE_NAMESPACE_PAGES)
 
 
+def delete_document(upload_id: str) -> None:
+    """Delete all vectors for an entire document (upload_id) from both namespaces."""
+    index = _get_index()
+    filter_dict = {"upload_id": {"$eq": upload_id}}
+    index.delete(filter=filter_dict, namespace=settings.PINECONE_NAMESPACE_CHUNKS)
+    index.delete(filter=filter_dict, namespace=settings.PINECONE_NAMESPACE_PAGES)
+
+
 def get_all_hashes(doc_id: str) -> dict[str, str]:
     """Return {section_id: content_hash} for all stored vectors of a doc."""
     index = _get_index()

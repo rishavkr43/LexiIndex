@@ -25,7 +25,8 @@ export default function SyncIndicator() {
 
   const poll = useCallback(async () => {
     try {
-      const data = await getSyncStatus()
+      const raw = await getSyncStatus()
+      const data = Array.isArray(raw) ? raw : []
       setSyncs(data)
       setError(false)
 
